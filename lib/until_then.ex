@@ -1,16 +1,25 @@
 defmodule UntilThen do
   @days ~w[monday tuesday wednesday thursday friday saturday sunday]a
 
+  @typedoc ~S"""
+  An atom that is a named day of the week of the special flag :weekdays.
+  """
+  @type day :: :monday | :tuesday | :wednesday | :thursday | :friday |
+               :saturday | :sunday | :weekdays
+
   alias Calendar.{Date, DateTime, Time}
 
+  @spec scheduled_time_zone() :: String.t
   def scheduled_time_zone do
     Application.get_env(:until_then, :scheduled_time_zone, "UTC")
   end
 
+  @spec next_occurrence(day, String.t) :: integer
   def next_occurrence(day, time) do
     next_occurrence(day, time, DateTime.now!(scheduled_time_zone))
   end
 
+  @spec next_occurrence(day, String.t, %Calendar.DateTime{ }) :: integer
   def next_occurrence(day, _time, _from)
   when not (day in @days or day == :weekdays) do
     raise ArgumentError,
@@ -25,6 +34,10 @@ defmodule UntilThen do
     end
   end
 
+  @spec find_next_occurrence(day,
+                             %Calendar.Time{ },
+                             %Calendar.DateTime{ },
+                             0..10) :: integer
   defp find_next_occurrence(_day, _time, _from, 10) do
     raise "An occurrence could not be found within ten days"
   end
@@ -41,6 +54,7 @@ defmodule UntilThen do
     end
   end
 
+  @spec valid?(tuple, day, %Calendar.DateTime{ }) :: :true | :false
   defp valid?(occurrence, :weekdays, from) do
     @days
     |> Enum.take(5)
@@ -51,6 +65,8 @@ defmodule UntilThen do
   end
   defp valid?(_occurrence, _restriction, _from), do: false
 
+  @spec to_microseconds({:ok, %Calendar.DateTime{ }}, %Calendar.DateTime{ }) ::
+        integer
   defp to_microseconds({:ok, to}, from) do
     {:ok, seconds, _microseconds, :after} = DateTime.diff(to, from)
     seconds * 1_000

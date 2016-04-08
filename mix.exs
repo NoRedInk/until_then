@@ -27,6 +27,7 @@ defmodule UntilThen.Mixfile do
   #
   # Type "mix help deps" for more examples and options
   defp deps do
-    [{:calendar, "~> 0.14.0"}]
+    [{:calendar, "~> 0.14.0"},
+     {:dialyze, "~> 0.2.1", only: :dev}]
   end
 end
