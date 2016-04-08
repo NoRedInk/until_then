@@ -1,9 +1,11 @@
 defmodule UntilThen do
   @days ~w[monday tuesday wednesday thursday friday saturday sunday]a
 
-  alias Calendar.{Date, DateTime, Strftime}
+  alias Calendar.{Date, DateTime, Time}
 
-  def scheduled_time_zone, do: "US/Pacific"
+  def scheduled_time_zone do
+    Application.get_env(:until_then, :scheduled_time_zone, "UTC")
+  end
 
   def next_occurrence(day, time) do
     next_occurrence(day, time, DateTime.now!(scheduled_time_zone))
@@ -16,10 +18,10 @@ defmodule UntilThen do
       ", or :weekdays"
   end
   def next_occurrence(day, time, from) do
-    if time =~ ~r"\A\d{2}:\d{2}:\d{2}[-+]\d{4}\z" do
-      find_next_occurrence(day, time, from, 0)
+    if time =~ ~r"\A(?:2[0-3]|[01]\d):[0-5]\d:[0-5]\d\z" do
+      find_next_occurrence(day, Time.Parse.iso8601!(time), from, 0)
     else
-      raise ArgumentError, "time must be in the format HH:MM:SS+/-ZZZZ"
+      raise ArgumentError, "please provide a valid time in the format HH:MM:SS"
     end
   end
 
@@ -27,27 +29,27 @@ defmodule UntilThen do
     raise "An occurrence could not be found within ten days"
   end
   defp find_next_occurrence(day, time, from, offset) do
-    parsed =
-      with {:ok, date} <- DateTime.add(from, 60 * 60 * 24 * offset),
-           {:ok, dst_date} <- DateTime.add(date, from.std_off - date.std_off),
-           {:ok, date_str} <- Strftime.strftime(dst_date, "%F"),
-           do: DateTime.Parse.rfc3339("#{date_str}T#{time}", scheduled_time_zone)
-    if valid?(parsed, day, from) do
-      to_microseconds(parsed, from)
+    occurrence =
+      with {:ok, next} <- DateTime.add(from, 60 * 60 * 24 * offset),
+           {:ok, next_w_dst} <- DateTime.add(next, from.std_off - next.std_off),
+           date = DateTime.to_date(next_w_dst),
+      do: DateTime.from_date_and_time_and_zone(date, time, from.timezone)
+    if valid?(occurrence, day, from) do
+      to_microseconds(occurrence, from)
     else
       find_next_occurrence(day, time, from, offset + 1)
     end
   end
 
-  defp valid?(parsed, :weekdays, from) do
+  defp valid?(occurrence, :weekdays, from) do
     @days
     |> Enum.take(5)
-    |> Enum.any?(fn day -> valid?(parsed, day, from) end)
+    |> Enum.any?(fn day -> valid?(occurrence, day, from) end)
   end
   defp valid?({:ok, date}, restriction, from) when restriction in @days do
     DateTime.after?(date, from) and apply(Date, :"#{restriction}?", [date])
   end
-  defp valid?(_parsed, _restriction, _from), do: false
+  defp valid?(_occurrence, _restriction, _from), do: false
 
   defp to_microseconds({:ok, to}, from) do
     {:ok, seconds, _microseconds, :after} = DateTime.diff(to, from)
