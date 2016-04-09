@@ -7,7 +7,9 @@ defmodule UntilThen.Mixfile do
      elixir: "~> 1.2",
      build_embedded: Mix.env == :prod,
      start_permanent: Mix.env == :prod,
-     deps: deps]
+     deps: deps,
+     package: package,
+     description: description]
   end
 
   # Configuration for the OTP application
@@ -31,5 +33,20 @@ defmodule UntilThen.Mixfile do
      {:dialyze, "~> 0.2.1", only: :dev},
      {:ex_doc, "~> 0.11.4", only: :dev},
      {:earmark, "~> 0.2.1", only: :dev}]
+  end
+
+  defp package do
+    %{ licenses: ["MIT"],
+       maintainers: ["James Edward Gray II"],
+       links: %{"GitHub" => "https://github.com/NoRedInk/until_then"}}
+  end
+
+  defp description do
+    """
+    This library tells you how many milliseconds to the next occurrence of a
+    scheduled event.  This is very convenient to combine with `:timer.sleep/1`
+    or `Process.send_after/3` as a means of repeatedly invoking some code on a
+    schedule and not having those invocations drift.
+    """
   end
 end
