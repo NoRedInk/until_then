@@ -123,7 +123,8 @@ defmodule UntilThen do
   @spec to_microseconds({:ok, %Calendar.DateTime{ }}, %Calendar.DateTime{ }) ::
         integer
   defp to_microseconds({:ok, to}, from) do
-    {:ok, seconds, _microseconds, :after} = DateTime.diff(to, from)
-    seconds * 1_000
+    {:ok, seconds, microseconds, :after} = DateTime.diff(to, from)
+    milliseconds = seconds * 1_000
+    if microseconds > 0, do: milliseconds + 1_000, else: milliseconds
   end
 end

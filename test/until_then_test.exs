@@ -80,6 +80,16 @@ defmodule UntilThenTest do
     assert UntilThen.next_occurrence(day, time, now) == @an_hour * 11 * @ms
   end
 
+  test "fractional seconds are rounded up" do
+    now = make_time("2016-04-11T10:30:00.428797")
+    day = :monday
+    time =
+      now
+      |> DateTime.add!(5)
+      |> Strftime.strftime!("%H:%M:%S")
+    assert UntilThen.next_occurrence(day, time, now) == 5 * @ms
+  end
+
   defp make_time(string, timezone \\ @tz) do
     {:ok, naive_date_time, _offset} = NaiveDateTime.Parse.iso8601(string)
     {:ok, date_time} = NaiveDateTime.to_date_time(naive_date_time, timezone)
